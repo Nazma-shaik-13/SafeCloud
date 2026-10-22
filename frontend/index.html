@@ -1,0 +1,55 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrustVault: share documents, prove who opened them</title><link rel="stylesheet" href="/css/style.css"></head>
+<body>
+<div class="wrap"><nav class="top"><a class="logo" href="/">trustvault.</a>
+<div class="links"><a href="#features">Features</a><a href="#how">How it works</a><a href="#why">Why us</a><a href="#limits">Limits</a><a href="#faq">FAQ</a></div>
+<a class="btn sm" href="/login.html">Log in</a></nav>
+
+<header class="hero"><div><span class="badge">Audit-first document sharing</span>
+<h1 class="mt16">Share documents. Prove who opened them.</h1>
+<p>Only people you name can read a file. Every open, change, share and refused attempt is written to a tamper-evident record.</p>
+<div class="row"><a class="btn" href="/signup.html">Get started</a><a class="btn ghost" href="/login.html">Log in</a></div></div>
+<div class="mock" aria-hidden="true">
+<div class="item"><span>contract.pdf</span><span class="badge ok">Read granted</span></div>
+<div class="item"><span>salary-letter.pdf</span><span class="badge no">Access denied, logged</span></div>
+<div class="item"><span>audit-papers.docx</span><span class="badge">Access revoked</span></div></div></header>
+<div class="strip"><span>FastAPI</span>+<span>PostgreSQL</span>+<span>Argon2id</span>+<span>SHA-256 hash chain</span>+<span>CSRF protection</span></div></div>
+
+<section id="features"><div class="wrap"><div class="center"><span class="badge">Features</span><h2>Built so the wrong person never gets in</h2></div>
+<div class="grid-a"><div class="card"><span class="num">01</span><h3>Per-document grants</h3><p class="mute">Give named people read or edit access to one file, not a whole folder.</p></div>
+<div class="card"><span class="num">02</span><h3>Instant revocation</h3><p class="mute">Checked on every request, so it works on the next click.</p></div></div>
+<div class="grid-a flip mt18"><div class="card"><span class="num">03</span><h3>Refusals are evidence too</h3><p class="mute">Denied attempts are recorded with who, what and when.</p></div>
+<div class="card"><span class="num">04</span><h3>Checked uploads</h3><p class="mute">Type, content and size are validated on the server.</p></div></div></div></section>
+
+<section class="soft" id="how"><div class="wrap"><span class="badge">How it works</span><h2>From upload to proof in four steps</h2>
+<div class="grid-4 pins mt34">
+<div class="card"><span class="num">01</span><h3>Upload</h3><p class="mute">Owners add a validated file.</p></div>
+<div class="card"><span class="num">02</span><h3>Grant</h3><p class="mute">Name who may read or edit.</p></div>
+<div class="card"><span class="num">03</span><h3>Revoke</h3><p class="mute">Take access back at any time.</p></div>
+<div class="card"><span class="num">04</span><h3>Audit</h3><p class="mute">Admins review every event.</p></div></div>
+<p class="note">Ready to be trusted!</p></div></section>
+
+<section class="dark" id="why"><div class="wrap"><div class="center"><span class="badge">Why TrustVault</span><h2>Security first, not bolted on</h2></div>
+<div class="grid-4"><div class="card"><h3>Server decides</h3><p>One authorisation function guards every route.</p></div>
+<div class="card"><h3>Admins stay out</h3><p>Admins see activity, never file contents.</p></div>
+<div class="card"><h3>Hash-chained log</h3><p>Editing history breaks the chain.</p></div>
+<div class="card"><h3>Hidden means hidden</h3><p>No access gives "not found", not "forbidden".</p></div></div></div></section>
+
+<section id="limits"><div class="wrap"><div class="center"><span class="badge">Honest limits</span><h2>What we do not promise</h2></div>
+<div class="grid-3"><div class="card"><h3>No un-downloading</h3><p class="mute">Revoking stops future access. It cannot make someone forget a saved copy.</p></div>
+<div class="card"><h3>Audit anchor</h3><p class="mute">A database superuser could rewrite the whole chain unless it is anchored elsewhere.</p></div>
+<div class="card"><h3>Small files</h3><p class="mute">Files live in the database, capped at 5 MB each.</p></div></div></div></section>
+
+<section class="soft" id="faq"><div class="wrap faq"><div><span class="badge">FAQ</span><h2>Common questions</h2></div><div>
+<details><summary>Can admins read my files?</summary><p>No. Admins manage users and see activity, not contents.</p></details>
+<details><summary>What happens when I revoke access?</summary><p>The person's next request is refused and the refusal is logged.</p></details>
+<details><summary>Can the audit log be changed?</summary><p>The app cannot update or delete it, and every row is hash-chained.</p></details>
+<details><summary>Which files can I upload?</summary><p>PDF, PNG, JPG, DOCX and TXT up to 5 MB, checked by content.</p></details></div></div></section>
+
+<section><div class="wrap"><div class="cta"><h2>Start sharing with proof</h2><p>Create an account and share your first document in a minute.</p>
+<a class="btn light" href="/signup.html">Get started</a></div></div></section>
+<footer><div class="wrap"><div><a class="logo" href="/">trustvault.</a><p class="mute">Secure document sharing.</p></div>
+<div class="mute"><b>Product</b><a href="#features">Features</a><a href="#how">How it works</a></div>
+<div class="mute"><b>Account</b><a href="/login.html">Log in</a><a href="/signup.html">Sign up</a></div></div></footer>
+</body></html>

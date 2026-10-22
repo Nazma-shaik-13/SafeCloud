@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TrustVault: dashboard</title><link rel="stylesheet" href="/css/style.css"></head>
+<body class="app">
+<div class="bar"><div class="wrap"><a class="logo" href="/dashboard.html">trustvault.</a>
+<div class="row"><span class="badge" id="who"></span><button class="btn ghost sm" id="logout">Log out</button></div></div></div>
+<main class="wrap">
+<div class="tabs"><button class="btn tab on" id="t-docs">Documents</button><button class="btn tab" id="t-admin" hidden>Activity</button></div>
+
+<div id="p-docs">
+<div class="card" id="upload" hidden><h3>Upload a document</h3>
+<form class="filters" id="upf"><input type="file" name="file" required><input name="category" placeholder="Category" required maxlength="50">
+<button class="btn" type="submit">Upload</button></form>
+<p class="mute small">PDF, PNG, JPG, DOCX or TXT, up to 5 MB.</p></div>
+<form class="filters" id="sf"><input name="q" placeholder="Name"><input name="category" placeholder="Category"><input name="owner" placeholder="Owner email">
+<input name="date_from" type="date" aria-label="From"><input name="date_to" type="date" aria-label="To"><button class="btn" type="submit">Search</button></form>
+<div class="docs" id="docs"></div><p class="mute" id="empty" hidden>No documents found.</p></div>
+
+<div id="p-admin" hidden>
+<div class="row mb14"><select class="auto" id="fa"><option value="">All actions</option><option>login</option><option>upload</option><option>download</option><option>update</option><option>delete</option><option>grant</option><option>revoke</option></select>
+<select class="auto" id="fo"><option value="">All outcomes</option><option>allowed</option><option>denied</option></select>
+<button class="btn sm" id="refresh">Refresh</button><button class="btn ghost sm" id="verify">Verify audit chain</button><span id="vres"></span></div>
+<div class="scroll"><table><thead><tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Outcome</th><th>Document</th><th>Detail</th><th>Hash</th></tr></thead><tbody id="audit"></tbody></table></div></div>
+</main>
+
+<dialog id="dlg"><h3>Share document</h3><p class="mute small" id="dname"></p><div id="grants"></div>
+<form id="gf" class="row mt16"><input class="f2" name="email" type="email" placeholder="Person's email" required>
+<select class="f1" name="level"><option value="read">Read</option><option value="edit">Edit</option></select><button class="btn sm" type="submit">Grant</button></form>
+<p class="err" id="gerr"></p><button class="btn ghost sm" id="close">Close</button></dialog>
+<input type="file" id="repl" hidden><div id="toast" hidden></div>
+<script src="/js/api.js"></script><script src="/js/dashboard.js"></script></body></html>
