@@ -1,4 +1,4 @@
-"""TrustVault API. Document routes always call permissions.authorize() first."""
+"""SafeCloud API. Document routes always call permissions.authorize() first."""
 import hashlib
 from datetime import date, datetime, timedelta, timezone
 from pathlib import Path
@@ -18,7 +18,7 @@ from .security import (DUMMY_HASH, hash_password, new_session, revoke_session,
                        user_from_token, verify_password)
 from .validation import detect_type, safe_name
 
-app = FastAPI(title="TrustVault")
+app = FastAPI(title="SafeCloud")
 EMAIL = r"^[^@\s]+@[^@\s]+\.[^@\s]+$"
 
 
@@ -165,6 +165,7 @@ def list_documents(q: Optional[str] = None, category: Optional[str] = None, owne
                    user=Depends(current_user), conn=Depends(get_conn)):
     # NOTE: this visibility rule mirrors authorize(); both are covered by tests.
     sql = """SELECT d.id, d.name, d.category, d.size_bytes, d.created_at, d.updated_at, o.email AS owner_email,
+                    CASE WHEN d.owner_id = %(me)s OR g.id IS NOT NULL THEN d.sha256 END AS sha256,
                     CASE WHEN d.owner_id = %(me)s THEN 'owner' ELSE COALESCE(g.level, 'admin') END AS my_access
              FROM documents d JOIN users o ON o.id = d.owner_id
              LEFT JOIN document_grants g ON g.document_id = d.id AND g.user_id = %(me)s AND g.revoked_at IS NULL
@@ -186,10 +187,15 @@ def list_documents(q: Optional[str] = None, category: Optional[str] = None, owne
 @app.get("/documents/{doc_id}/download")
 def download(doc_id: UUID, request: Request, user=Depends(current_user), conn=Depends(get_conn)):
     doc = authorize(conn, user, doc_id, "read", ip_of(request))   # <- the line the interview will ask about
-    content = conn.execute("SELECT content FROM documents WHERE id=%s", (doc_id,)).fetchone()["content"]
-    audit.log(conn, user["id"], "download", "allowed", doc_id, {"ip": ip_of(request)})
-    return Response(bytes(content), media_type=doc["content_type"], headers={
-        "Content-Disposition": f'attachment; filename="{doc["name"]}"', "Cache-Control": "no-store"})
+    row = conn.execute("SELECT content, sha256 FROM documents WHERE id=%s", (doc_id,)).fetchone()
+    content = bytes(row["content"])
+    if hashlib.sha256(content).hexdigest() != row["sha256"]:      # integrity: stored bytes must match the hash taken at upload
+        audit.log(conn, user["id"], "integrity_failure", "denied", doc_id, {"ip": ip_of(request)})
+        raise HTTPException(500, "Integrity check failed: file does not match its recorded SHA-256")
+    audit.log(conn, user["id"], "download", "allowed", doc_id, {"ip": ip_of(request), "sha256": row["sha256"]})
+    return Response(content, media_type=doc["content_type"], headers={
+        "Content-Disposition": f'attachment; filename="{doc["name"]}"', "Cache-Control": "no-store",
+        "X-Content-SHA256": row["sha256"]})
 
 
 @app.patch("/documents/{doc_id}")

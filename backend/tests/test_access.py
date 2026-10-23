@@ -138,3 +138,27 @@ def test_state_changing_request_without_csrf_header_is_refused():
     bare = TestClient(app)                      # no X-Requested-With
     bare.cookies.update(owner.cookies)
     assert bare.post("/documents", files={"file": PDF}, data={"category": "x"}).status_code == 403
+
+
+# ---------- document integrity (SHA-256) ----------
+import hashlib
+
+
+def test_download_carries_matching_sha256_and_hash_hidden_from_admin():
+    owner, _ = user("owner"); adm = admin()
+    doc = upload(owner)
+    r = owner.get(f"/documents/{doc}/download")
+    assert r.headers["x-content-sha256"] == hashlib.sha256(r.content).hexdigest()
+    mine = {d["id"]: d for d in owner.get("/documents").json()}
+    assert mine[doc]["sha256"] == r.headers["x-content-sha256"]
+    assert {d["id"]: d for d in adm.get("/documents").json()}[doc]["sha256"] is None
+
+
+def test_tampered_file_is_refused_and_audited():
+    owner, _ = user("owner"); adm = admin()
+    doc = upload(owner)
+    with psycopg.connect(DATABASE_URL, autocommit=True) as db:       # simulate someone altering the stored bytes
+        db.execute("UPDATE documents SET content=%s WHERE id=%s", (b"%PDF-1.4 TAMPERED", doc))
+    assert owner.get(f"/documents/{doc}/download").status_code == 500
+    events = adm.get("/admin/audit", params={"action": "integrity_failure"}).json()
+    assert any(e["document_id"] == doc for e in events)
