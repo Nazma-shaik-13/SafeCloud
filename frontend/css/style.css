@@ -81,7 +81,8 @@ input:focus,select:focus{outline:2px solid var(--ink)}
 .doc .meta{font-size:13px;color:var(--mute);margin:8px 0 14px;display:grid;gap:2px}
 .doc .row{gap:8px}
 table{width:100%;border-collapse:collapse;font-size:13px;background:#fff;border-radius:16px;overflow:hidden}
-th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-word}
+th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;white-space:nowrap}
+td.detail{white-space:normal;word-break:break-all;min-width:240px}
 th{background:#fafafa}
 .scroll{overflow-x:auto}
 dialog{border:0;border-radius:var(--r);padding:28px;width:min(480px,92vw);box-shadow:0 20px 60px rgba(0,0,0,.3)}

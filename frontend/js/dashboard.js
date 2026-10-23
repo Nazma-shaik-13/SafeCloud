@@ -48,7 +48,8 @@ function card(d) {
   }
   return h("div", { class: "card doc" }, h("span", { class: "badge" }, d.my_access), h("h3", {}, d.name),
     h("div", { class: "meta" }, h("span", {}, `${d.category} · ${fmtSize(d.size_bytes)}`), h("span", {}, `Owner: ${d.owner_email}`),
-      h("span", {}, `Added ${fmtDate(d.created_at)}`)), h("div", { class: "row" }, ...btns));
+      h("span", {}, `Added ${fmtDate(d.created_at)}`),
+      ...(d.sha256 ? [h("span", { title: d.sha256 }, `SHA-256: ${d.sha256.slice(0, 16)}…`)] : [])), h("div", { class: "row" }, ...btns));
 }
 
 async function download(d) {
@@ -88,7 +89,7 @@ async function loadAudit() {
   $("audit").replaceChildren(...rows.map((r) => h("tr", {},
     h("td", {}, String(r.id)), h("td", {}, fmtDate(r.at)), h("td", {}, r.actor_email || "unknown"), h("td", {}, r.action),
     h("td", {}, h("span", { class: "badge " + (r.outcome === "allowed" ? "ok" : "no") }, r.outcome)),
-    h("td", {}, r.document_id ? r.document_id.slice(0, 8) : ""), h("td", {}, JSON.stringify(r.detail)),
+    h("td", {}, r.document_id ? r.document_id.slice(0, 8) : ""), h("td", { class: "detail" }, JSON.stringify(r.detail)),
     h("td", { title: r.hash }, r.hash.slice(0, 10)))));
 }
 
