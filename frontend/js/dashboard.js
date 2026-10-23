@@ -108,8 +108,13 @@ $("verify").onclick = guard(async () => {
 });
 $("sf").onsubmit = (e) => { e.preventDefault(); guard(loadDocs)(); };
 $("upf").onsubmit = guard(async (e) => {
-  e.preventDefault(); await api("/documents", { method: "POST", body: new FormData($("upf")) });
-  $("upf").reset(); toast("Uploaded"); loadDocs();
+  e.preventDefault();
+  const btn = $("upf").querySelector("button");
+  btn.disabled = true; btn.textContent = "Uploading…";
+  try {
+    await api("/documents", { method: "POST", body: new FormData($("upf")) });
+    $("upf").reset(); toast("Uploaded"); await loadDocs();
+  } finally { btn.disabled = false; btn.textContent = "Upload"; }
 });
 $("repl").onchange = guard(async () => {
   const f = $("repl").files[0]; if (!f || !replDoc) return;
