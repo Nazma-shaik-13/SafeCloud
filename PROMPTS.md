@@ -43,7 +43,7 @@ How I used AI on this project, what it got wrong, and what I did about it.
 
 ## 5. Do the tests really protect access? (2026-10-22)
 **Asked:** For tests that fail if an access check is removed.
-**Trial:** I removed the `authorize()` call from the download route. 5 tests failed. After I put it back, all 26 passed.
+**Trial:** The AI tool removed the `authorize()` call in its own test environment: 4 of the 12 tests then failed. All 12 passed on my machine. I repeated the removal myself on 2026-10-24: see entry 9.
 **Check:** My Activity log shows grant, allowed download, revoke, and then the same viewer's download denied. Logged in as the viewer, `/admin/audit` answered "Admins only".
 **Limit:** I tried this on the download route only.
 **Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
@@ -66,6 +66,13 @@ How I used AI on this project, what it got wrong, and what I did about it.
 **What I did:** The button is now disabled while an upload runs.
 **Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/07131fa
 
+## 9. Closing test gaps (2026-10-24)
+**Asked:** To add tests for the three threats that had none (script injection, stolen sessions, SQL injection), make delete erase the file, and let admins disable users.
+**AI gave:** 12 new tests, a delete that erases the stored file, and an admin Users page. Disabling a user ends their sessions. Admins cannot disable themselves or other admins.
+**Problem:** The AI's first stolen-cookie test did not send the copied cookie, so it failed. A second test flagged the word `innerHTML` in a comment, which was a false alarm. Both were fixed.
+**Check:** All 26 tests pass on my machine. I removed the `authorize()` call from the download route: 5 tests failed. After I put it back, all 26 passed.
+**Limit:** An erased file may stay on the database disk until PostgreSQL cleans up, and in backups.
+**Commits:** https://github.com/Nazma-shaik-13/SafeCloud/commit/039a22d and https://github.com/Nazma-shaik-13/SafeCloud/commit/f24e846
 ---
 
 **Other context I used:** the challenge problem statement, two UI reference images (for style and section order only), and my requirement checklist.
