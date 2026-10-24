@@ -1,32 +1,71 @@
-# PROMPTS.md
-> **Candidate: this file must be YOUR honest record.** The entries below describe real problems found in AI-written code during this build. Re-read the code, confirm each one yourself, replace `<commit>` with your real commit link, and add your own entries. Delete this note.
+# PROMPTS.md: SafeCloud
 
-## Entry format
-Date · what I asked · what the tool produced · what was wrong · what I did (commit link)
+How I used AI on this project, what it got wrong, and what I did about it.
 
-## 2026-10-21 · audit trail: oversize uploads left no record
-- **Asked:** write the upload route with a 5 MB limit and audit logging.
-- **Produced:** a route that returned HTTP 413 for big files without writing any audit event, while other refusals were logged.
-- **Wrong:** the challenge says refused attempts must be provable. This one vanished.
-- **Fixed:** `read_valid_file()` in `main.py` audits every rejection; added `test_oversize_upload_is_rejected_and_audited`. `<commit>`
+**Tool:** Claude (claude.ai) for design, code and test help. I also used an AI-written roadmap and a written code review as input.
 
-## 2026-10-21 · audit trail: denied downloads logged under the wrong action name
-- **Asked:** central `authorize()` that logs denials.
-- **Produced:** denials logged as action `read`, while successes were logged as `download`.
-- **Wrong:** an admin filtering by `download` would never see refused downloads. Found when my new test failed.
-- **Fixed:** `AUDIT_NAME` mapping in `permissions.py`. `<commit>`
+**Note:** Entries 1 to 5 are dated when I did the work. I committed the backend on 2026-10-23, after fixing the first AI drafts, so the commit shows the corrected code.
 
-## 2026-10-21 · access control: how I checked `authorize()`
-- **Checked:** removed the `authorize()` call from the download route; 4 tests failed; restored it; all 12 passed. `<commit>`
-- **Known gap:** the document list query repeats the visibility rule in SQL, so there are two places to keep correct.
+---
 
-## 2026-10-21 · setup: missing dependency and unneeded extension
-- **Produced:** `uvicorn --env-file` without `python-dotenv`; `seed.py` that ignored `.env`; a migration requiring `pgcrypto`.
-- **Fixed:** `python-dotenv` + `load_dotenv()` in `config.py`; removed `pgcrypto` (`gen_random_uuid()` is built into PostgreSQL 13+). `<commit>`
+## 1. Architecture (2026-10-21)
+**Asked:** I gave an AI-written roadmap (Netlify frontend, separate FastAPI host, database) and asked if it was a good plan.
+**Problem:** Too many services to deploy in four days. A frontend and API on different sites make login cookies harder and riskier. Permission checks had no single place.
+**What I did:** One FastAPI app that serves the pages and the API, PostgreSQL, files stored in the database (5 MB limit), and one `authorize()` function for all document access.
+**Check:** It runs at one address, locally and on Render.
+**Limit:** Storing files in the database only suits small files.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
 
-## 2026-10-21 · frontend: CSP vs inline styles
-- **Produced:** first UI draft used inline `style=` attributes, which the app's own CSP (`default-src 'self'`) blocks.
-- **Fixed:** moved them to CSS classes. `<commit>`
+## 2. Roles and permissions: access control (2026-10-21)
+**Asked:** For the role rules and database tables before writing any code.
+**AI gave:** Admins see file details but never contents. People without access get "not found". Only the owner can share or delete. "Edit" cannot widen access. Access is checked in the database on every request, so removing it works at once.
+**Problem I found:** The document list repeats the access rule in SQL, so there are two places to keep correct.
+**What I did:** Kept it, and tested both.
+**Tests:** `test_stranger_cannot_read_edit_or_delete`, `test_reader_cannot_edit_delete_or_share`, `test_edit_grant_can_replace_content_but_read_grant_cannot`, `test_admin_sees_metadata_but_never_contents`.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
 
-## Prompts and context files I reused
-(Paste your own here: the instructions, reference images and prompts you reused across the week.)
+## 3. Audit trail: refused uploads were not logged (2026-10-22)
+**Asked:** For an upload route with a 5 MB limit and audit logging.
+**AI gave:** A route that returned an error for big files without writing an audit record.
+**Problem:** The challenge says refused attempts must be provable. A code review I received also pointed this out.
+**What I did:** One function now checks size and type and logs every rejected upload with its reason.
+**Check:** My Activity log shows a bad upload as `upload` / `denied` / `invalid type`. Test: `test_oversize_upload_is_rejected_and_audited`.
+**Limit:** Requests with no login are refused but not logged.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
+
+## 4. Audit trail: refused downloads had the wrong name (2026-10-22)
+**Asked:** For one `authorize()` function that logs every refusal.
+**AI gave:** Refusals logged as `read`, while successful downloads were logged as `download`.
+**Problem:** An admin filtering by `download` would miss refused attempts. A test caught this.
+**What I did:** Mapped refusals to the same action names as successes.
+**Check:** My Activity log shows the viewer's refused `download` right after the owner's `revoke`. Test: `test_denied_download_is_audited_with_hashes_and_chain_verifies`.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
+
+## 5. Do the tests really protect access? (2026-10-22)
+**Asked:** For tests that fail if an access check is removed.
+**Trial:** I removed the `authorize()` call from the download route. 5 tests failed. After I put it back, all 26 passed.
+**Check:** My Activity log shows grant, allowed download, revoke, and then the same viewer's download denied. Logged in as the viewer, `/admin/audit` answered "Admins only".
+**Limit:** I tried this on the download route only.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/25e9598
+
+## 6. SHA-256 was saved but never checked (2026-10-23)
+**Asked:** Whether my requirement list was met, including SHA-256 for integrity.
+**Problem:** The hash was stored on upload, but nothing compared it on download.
+**What I did:** Download now recalculates the hash and refuses the file if it does not match, and logs an `integrity_failure`. Admins do not see the hash, because it could help them test guesses about a file.
+**Tests:** `test_download_carries_matching_sha256_and_hash_hidden_from_admin`, `test_tampered_file_is_refused_and_audited`.
+**Limit:** Someone who can edit both the file and its hash in the database can still cheat.
+**Commits:** https://github.com/Nazma-shaik-13/SafeCloud/commit/c835605 (check), https://github.com/Nazma-shaik-13/SafeCloud/commit/2e2371e (hash shown on cards)
+
+## 7. Login form blocked valid logins (2026-10-23)
+**Problem:** The login page reused the signup rule "password at least 10 characters". It is not needed at login and could stop people with shorter passwords.
+**What I did:** Removed the rule from the login form.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/1330a1f
+
+## 8. Duplicate uploads (2026-10-23)
+**Problem:** The page let me click Upload again while the first upload was running. On the live site this created several copies.
+**What I did:** The button is now disabled while an upload runs.
+**Commit:** https://github.com/Nazma-shaik-13/SafeCloud/commit/07131fa
+
+---
+
+**Other context I used:** the challenge problem statement, two UI reference images (for style and section order only), and my requirement checklist.
