@@ -57,7 +57,7 @@ HTML, CSS and JavaScript, FastAPI (Python), PostgreSQL, pytest. Hosted on Render
 2. In `backend`, create and start a virtual environment: `python -m venv .venv`, then `.venv\Scripts\activate` (Windows) or `source .venv/bin/activate` (Mac/Linux).
 3. `python -m pip install -r requirements.txt`
 4. Copy `.env.example` to `.env` and set `DATABASE_URL`.
-5. `python seed.py` creates the three demo accounts. Set `SEED_PASSWORD` first to choose their password.
+5. `python seed.py` creates the three demo accounts. Set `SEED_PASSWORD` first to choose their password(default password: ChangeMe-Demo-123).
 6. `python -m uvicorn app.main:app`, then open http://localhost:8000
 
 ## Run the tests

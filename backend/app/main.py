@@ -186,7 +186,7 @@ def list_documents(q: Optional[str] = None, category: Optional[str] = None, owne
 
 @app.get("/documents/{doc_id}/download")
 def download(doc_id: UUID, request: Request, user=Depends(current_user), conn=Depends(get_conn)):
-    doc = authorize(conn, user, doc_id, "read", ip_of(request))   # <- the line the interview will ask about
+    doc = authorize(conn, user, doc_id, "read", ip_of(request))   ####Imp
     row = conn.execute("SELECT content, sha256 FROM documents WHERE id=%s", (doc_id,)).fetchone()
     content = bytes(row["content"])
     if hashlib.sha256(content).hexdigest() != row["sha256"]:      # integrity: stored bytes must match the hash taken at upload
