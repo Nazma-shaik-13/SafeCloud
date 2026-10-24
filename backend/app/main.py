@@ -211,8 +211,11 @@ def edit_metadata(doc_id: UUID, body: PatchIn, request: Request, user=Depends(cu
 @app.delete("/documents/{doc_id}")
 def delete(doc_id: UUID, request: Request, user=Depends(current_user), conn=Depends(get_conn)):
     authorize(conn, user, doc_id, "delete", ip_of(request))
-    conn.execute("UPDATE documents SET deleted_at=now() WHERE id=%s", (doc_id,))
-    audit.log(conn, user["id"], "delete", "allowed", doc_id, {"ip": ip_of(request)})
+    with conn.transaction():
+        # hide the document AND erase its stored bytes; the row stays so the audit trail still makes sense
+        conn.execute("UPDATE documents SET deleted_at=now(), content=%s WHERE id=%s", (b"", doc_id))
+        conn.execute("UPDATE document_grants SET revoked_at=now() WHERE document_id=%s AND revoked_at IS NULL", (doc_id,))
+        audit.log(conn, user["id"], "delete", "allowed", doc_id, {"ip": ip_of(request), "erased": True})
     return {"ok": True}
 
 
@@ -253,15 +256,17 @@ def revoke(doc_id: UUID, user_id: UUID, request: Request, user=Depends(current_u
 
 
 # ---------- admin ----------
-def require_admin(user):
+def require_admin(user, conn, request, action):
+    """Admin-only routes. A refusal is logged, like every other refused attempt."""
     if user["role"] != "admin":
+        audit.log(conn, user["id"], action, "denied", detail={"ip": ip_of(request)})
         raise HTTPException(403, "Admins only")
 
 
 @app.get("/admin/audit")
-def admin_audit(action: Optional[str] = None, outcome: Optional[str] = None,
+def admin_audit(request: Request, action: Optional[str] = None, outcome: Optional[str] = None,
                 user=Depends(current_user), conn=Depends(get_conn)):
-    require_admin(user)
+    require_admin(user, conn, request, "view_audit")
     sql = """SELECT e.id, e.at, a.email AS actor_email, e.action, e.document_id, e.outcome, e.detail,
                     e.prev_hash, e.hash
              FROM audit_events e LEFT JOIN users a ON a.id = e.actor_id WHERE true"""
@@ -274,9 +279,39 @@ def admin_audit(action: Optional[str] = None, outcome: Optional[str] = None,
 
 
 @app.get("/admin/audit/verify")
-def admin_verify(user=Depends(current_user), conn=Depends(get_conn)):
-    require_admin(user)
+def admin_verify(request: Request, user=Depends(current_user), conn=Depends(get_conn)):
+    require_admin(user, conn, request, "verify_audit")
     return audit.verify_chain(conn)
+
+
+@app.get("/admin/users")
+def admin_users(request: Request, user=Depends(current_user), conn=Depends(get_conn)):
+    require_admin(user, conn, request, "view_users")
+    return conn.execute("SELECT id, email, role, is_active, created_at FROM users ORDER BY created_at").fetchall()
+
+
+def set_user_active(user_id, active, request, user, conn):
+    action = "user_enable" if active else "user_disable"
+    require_admin(user, conn, request, action)
+    target = conn.execute("SELECT id, role FROM users WHERE id=%s", (user_id,)).fetchone()
+    if not target or target["id"] == user["id"] or target["role"] == "admin":
+        raise HTTPException(400, "You can only change owner and viewer accounts")   # no self-lockout, no admin takeover
+    with conn.transaction():
+        conn.execute("UPDATE users SET is_active=%s WHERE id=%s", (active, user_id))
+        if not active:      # end every open session; re-enabling does not bring them back
+            conn.execute("UPDATE sessions SET revoked_at=now() WHERE user_id=%s AND revoked_at IS NULL", (user_id,))
+        audit.log(conn, user["id"], action, "allowed", None, {"ip": ip_of(request), "target": str(user_id)})
+    return {"ok": True}
+
+
+@app.post("/admin/users/{user_id}/disable")
+def disable_user(user_id: UUID, request: Request, user=Depends(current_user), conn=Depends(get_conn)):
+    return set_user_active(user_id, False, request, user, conn)
+
+
+@app.post("/admin/users/{user_id}/enable")
+def enable_user(user_id: UUID, request: Request, user=Depends(current_user), conn=Depends(get_conn)):
+    return set_user_active(user_id, True, request, user, conn)
 
 
 # Frontend last, so API routes win. Same origin = no CORS, no cross-site cookies.

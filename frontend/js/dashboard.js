@@ -1,4 +1,4 @@
-// Everything shown comes from the server. Data is inserted as TEXT (never innerHTML), so names can't inject scripts.
+// Everything shown comes from the server. Data is inserted as plain text, never as HTML, so names can't inject scripts.
 const $ = (id) => document.getElementById(id);
 const h = (tag, attrs = {}, ...kids) => {
   const e = document.createElement(tag);
@@ -22,6 +22,7 @@ async function init() {
   $("who").textContent = `${me.email} · ${me.role}`;
   $("upload").hidden = me.role !== "owner";
   $("t-admin").hidden = me.role !== "admin";
+  $("t-users").hidden = me.role !== "admin";
   await loadDocs();
 }
 
@@ -63,7 +64,7 @@ async function rename(d) {
   await api(`/documents/${d.id}`, { method: "PATCH", json: { name, category } }); toast("Saved"); loadDocs();
 }
 async function del(d) {
-  if (!confirm(`Delete "${d.name}"?`)) return;
+  if (!confirm(`Delete "${d.name}"? The file is erased and cannot be restored.`)) return;
   await api(`/documents/${d.id}`, { method: "DELETE" }); toast("Deleted"); loadDocs();
 }
 
@@ -93,14 +94,30 @@ async function loadAudit() {
     h("td", { title: r.hash }, r.hash.slice(0, 10)))));
 }
 
+// ----- admin users -----
+async function loadUsers() {
+  const rows = await api("/admin/users");
+  $("users").replaceChildren(...rows.map((u) => h("tr", {},
+    h("td", {}, u.email), h("td", {}, u.role),
+    h("td", {}, h("span", { class: "badge " + (u.is_active ? "ok" : "no") }, u.is_active ? "active" : "disabled")),
+    h("td", {}, u.role === "admin" ? "-" : h("button", { class: "btn sm " + (u.is_active ? "danger" : "ghost"), onclick: guard(async () => {
+      await api(`/admin/users/${u.id}/${u.is_active ? "disable" : "enable"}`, { method: "POST" });
+      toast(u.is_active ? "User disabled" : "User enabled"); loadUsers();
+    }) }, u.is_active ? "Disable" : "Enable")))));
+}
+
 function tab(which) {
-  $("p-docs").hidden = which !== "docs"; $("p-admin").hidden = which !== "admin";
-  $("t-docs").classList.toggle("on", which === "docs"); $("t-admin").classList.toggle("on", which === "admin");
+  for (const k of ["docs", "admin", "users"]) {
+    $("p-" + k).hidden = which !== k;
+    $("t-" + k).classList.toggle("on", which === k);
+  }
   if (which === "admin") guard(loadAudit)();
+  if (which === "users") guard(loadUsers)();
 }
 
 $("t-docs").onclick = () => tab("docs");
 $("t-admin").onclick = () => tab("admin");
+$("t-users").onclick = () => tab("users");
 $("refresh").onclick = guard(loadAudit);
 $("verify").onclick = guard(async () => {
   const v = await api("/admin/audit/verify");

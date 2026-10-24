@@ -5,7 +5,7 @@
 <div class="bar"><div class="wrap"><a class="logo" href="/dashboard.html">safecloud.</a>
 <div class="row"><span class="badge" id="who"></span><button class="btn ghost sm" id="logout">Log out</button></div></div></div>
 <main class="wrap">
-<div class="tabs"><button class="btn tab on" id="t-docs">Documents</button><button class="btn tab" id="t-admin" hidden>Activity</button></div>
+<div class="tabs"><button class="btn tab on" id="t-docs">Documents</button><button class="btn tab" id="t-admin" hidden>Activity</button><button class="btn tab" id="t-users" hidden>Users</button></div>
 
 <div id="p-docs">
 <div class="card" id="upload" hidden><h3>Upload a document</h3>
@@ -17,10 +17,12 @@
 <div class="docs" id="docs"></div><p class="mute" id="empty" hidden>No documents found.</p></div>
 
 <div id="p-admin" hidden>
-<div class="row mb14"><select class="auto" id="fa"><option value="">All actions</option><option>login</option><option>upload</option><option>download</option><option>update</option><option>delete</option><option>grant</option><option>revoke</option></select>
+<div class="row mb14"><select class="auto" id="fa"><option value="">All actions</option><option>login</option><option>upload</option><option>download</option><option>update</option><option>delete</option><option>grant</option><option>revoke</option><option>user_disable</option><option>user_enable</option><option>integrity_failure</option></select>
 <select class="auto" id="fo"><option value="">All outcomes</option><option>allowed</option><option>denied</option></select>
 <button class="btn sm" id="refresh">Refresh</button><button class="btn ghost sm" id="verify">Verify audit chain</button><span id="vres"></span></div>
 <div class="scroll"><table><thead><tr><th>#</th><th>Time</th><th>Actor</th><th>Action</th><th>Outcome</th><th>Document</th><th>Detail</th><th>Hash</th></tr></thead><tbody id="audit"></tbody></table></div></div>
+<div id="p-users" hidden>
+<div class="scroll"><table><thead><tr><th>Email</th><th>Role</th><th>Status</th><th>Action</th></tr></thead><tbody id="users"></tbody></table></div></div>
 </main>
 
 <dialog id="dlg"><h3>Share document</h3><p class="mute small" id="dname"></p><div id="grants"></div>
