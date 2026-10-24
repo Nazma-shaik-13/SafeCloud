@@ -1,20 +1,27 @@
-# API: who may call what
-All state-changing requests need header `X-Requested-With: trustvault`. Session cookie `tv_session` (HttpOnly, SameSite=Strict).
+# API.md: who can call what
 
-| Endpoint | Who | Notes |
+All changes (POST, PUT, PATCH, DELETE) need the header `X-Requested-With: trustvault`. Login sets a cookie `tv_session` (HttpOnly, SameSite=Strict).
+
+Answers: `401` not logged in, `403` not allowed, `404` document not visible to you, `413` file over 5 MB, `415` file type not allowed.
+
+| Endpoint | Who can call it | Notes |
 |---|---|---|
-| POST /signup | anyone | role must be `owner` or `viewer` |
-| POST /login | anyone | lockout after 5 failures (15 min) |
-| POST /logout, GET /me | logged in | |
-| POST /documents | role `owner` | multipart; type + size checked |
-| GET /documents | logged in | only docs you own, hold a grant for, or (admin) metadata of all; filters q, category, owner, date_from, date_to |
-| GET /documents/{id}/download | owner, `read`/`edit` grant | admins refused (403) |
-| PATCH /documents/{id} | owner, `edit` grant | name, category |
-| PUT /documents/{id}/content | owner, `edit` grant | same extension as current name |
-| DELETE /documents/{id} | owner only | soft delete |
-| GET/POST /documents/{id}/grants | owner only | list / add or change a grant |
-| DELETE /documents/{id}/grants/{user_id} | owner only | revoke |
-| GET /admin/audit | admin | filters action, outcome |
-| GET /admin/audit/verify | admin | recomputes the hash chain |
+| `POST /signup` | Anyone | Role must be `owner` or `viewer` |
+| `POST /login` | Anyone | Account locks for 15 minutes after 5 wrong tries |
+| `POST /logout`, `GET /me` | Logged-in users | |
+| `POST /documents` | Owners | Multipart upload with a category |
+| `GET /documents` | Logged-in users | Only your documents, shared ones, or (admin) details of all. Filters: `q`, `category`, `owner`, `date_from`, `date_to`. The SHA-256 is shown only if you can read the file |
+| `GET /documents/{id}/download` | Document owner, people with read or edit access | Admins get 403. Sends `X-Content-SHA256` and refuses a file that no longer matches its hash |
+| `PATCH /documents/{id}` | Document owner, people with edit access | Name and category |
+| `PUT /documents/{id}/content` | Document owner, people with edit access | New file must keep the same extension |
+| `DELETE /documents/{id}` | Document owner | Hides the document and erases the stored file |
+| `GET /documents/{id}/grants` | Document owner | Who has access |
+| `POST /documents/{id}/grants` | Document owner | Give `read` or `edit` access to a person by email |
+| `DELETE /documents/{id}/grants/{user_id}` | Document owner | Take access back |
+| `GET /admin/audit` | Admins | Filters: `action`, `outcome` |
+| `GET /admin/audit/verify` | Admins | Checks the whole hash chain |
+| `GET /admin/users` | Admins | Email, role, status. No password data |
+| `POST /admin/users/{id}/disable` | Admins | Owners and viewers only. Ends their sessions |
+| `POST /admin/users/{id}/enable` | Admins | Owners and viewers only |
 
-Every document route calls `authorize()` in `backend/app/permissions.py`. No access gives 404; visible but not permitted gives 403.
+Every document route calls `authorize()` in `backend/app/permissions.py`. Refused attempts, including non-admins calling admin routes, are written to the audit log.
